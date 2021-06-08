@@ -12,6 +12,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "Startup Name Generator",
+      theme: ThemeData(
+        primaryColor: Colors.white
+      ),
       home: RandomWords()
     );
   }
@@ -28,7 +31,8 @@ class RandomWords extends StatefulWidget {
 /// Prefixing an identifier with an underscore enforces privacy in the Dart language and is a recommended best practice for State objects.
 class _RandomWordsState extends State<RandomWords> {
 
-  final _suggestions = <WordPair>[];
+  final _suggestions = <WordPair>[];  // List
+  final _saved = <WordPair>{};  // Set
   final _biggerFont = TextStyle(fontSize: 18.0);
 
   @override
@@ -36,8 +40,41 @@ class _RandomWordsState extends State<RandomWords> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Startup Name Generator'),
+        actions: [
+          IconButton(icon: Icon(Icons.list), onPressed: _pushSaved)
+        ],
       ),
       body: _buildSuggestions(),
+    );
+  }
+
+  void _pushSaved() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+          builder: (BuildContext context) {
+            final tiles = _saved.map(
+                (WordPair pair) {
+                  return ListTile(
+                    title: Text(
+                      pair.asPascalCase,
+                      style: _biggerFont,
+                    ),
+                  );
+                },
+            );
+            final divided = ListTile.divideTiles(
+                context: context,
+                tiles: tiles
+            ).toList();
+
+            return Scaffold(
+              appBar: AppBar(
+                title: Text('Saved Suggestions'),
+              ),
+              body: ListView(children: divided),
+            );
+          }
+      )
     );
   }
 
@@ -58,11 +95,23 @@ class _RandomWordsState extends State<RandomWords> {
   }
 
   Widget _buildRow(WordPair pair) {
+    final alreadySaved = _saved.contains(pair);
     return ListTile(
       title: Text(
         pair.asPascalCase,
         style: _biggerFont,
       ),
+      trailing: Icon(
+        alreadySaved ? Icons.favorite : Icons.favorite_border,
+        color: alreadySaved ? Colors.red : null,
+      ),
+      onTap: () {
+        /// 状態が変更されたことをフレームワークに通知
+        /// Flutter のリアクティブ スタイル フレームワークでは、setState() を呼び出すと State オブジェクトの build() メソッドが呼び出され、UI が更新されます。
+        setState(() {
+          alreadySaved ? _saved.remove(pair) : _saved.add(pair);
+        });
+      },
     );
   }
 }
